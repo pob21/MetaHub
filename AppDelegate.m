@@ -25,7 +25,7 @@
     
     
     
-    [self.window setFrame: NSMakeRect(200, 100, 300, 700) display: YES];
+    [self.window setFrame: NSMakeRect(100, 100, 300, 700) display: YES];
     [self.window setOpaque: NO];
     self.window.alphaValue = .9f;
     

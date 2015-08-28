@@ -11,6 +11,9 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import "NSView+ViewBlur.h"
 #import "DropSongView.h"
+#import "SongSelectorWindowController.h"
+
+@import AVFoundation;
 
 
 @interface HomeScreenWindowController : NSWindowController <NSTextFieldDelegate>
@@ -23,7 +26,12 @@
 
 // Utilities
 - (void)linkSongInArray:(NSArray *)fileArray;
+- (void)songSelected:(NSDictionary *)songDict;
 
+
+// Actions
+- (void)search;
+- (void)saveAndExport;
 
 
 @property (nonatomic, strong) DropSongView *dropSongView;
@@ -33,7 +41,12 @@
 @property (nonatomic, strong) NSTextField *artistField;
 @property (nonatomic, strong) NSTextField *yearField;
 @property (nonatomic, strong) NSButton *saveButton;
-
+@property (nonatomic, strong) NSButton *searchButton;
+@property (nonatomic, strong) NSWindow *songSelectorWindow;
+@property (nonatomic, strong) SongSelectorWindowController *songSelector;
+@property (nonatomic, strong) NSImageView *albumArtImageView;
+@property (nonatomic, strong) NSString *fileLocation;
+@property (nonatomic, strong) NSDictionary *songDictionary;
 
 @end
 
