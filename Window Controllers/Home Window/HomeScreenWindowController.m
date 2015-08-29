@@ -178,15 +178,16 @@
     }
 
     
-    ID3v2_tag* tag = load_tag(fileLocation.UTF8String); // Load the full tag from the file
-    tag = new_tag();
     
-    if(tag == NULL)
-    {
-        NSLog(@"Tag is null");
-        tag = new_tag();
-    }
-
+    
+    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
+    NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
+    char *minetype = get_mime_type_from_filename([[songDictionary objectForKey: @"artworkUrl100"] UTF8String]);
+    
+    
+    
+    //ID3v2_tag* tag = load_tag(fileLocation.UTF8String); // Load the full tag from the file
+    ID3v2_tag* tag = new_tag();
 
     
     // Set the new info
@@ -194,13 +195,15 @@
     tag_set_artist((char *)artistField.stringValue.UTF8String, 0, tag);
     tag_set_album((char *)albumTitleField.stringValue.UTF8String, 0, tag);
     tag_set_year((char *)yearField.stringValue.UTF8String, 0, tag);
-
+    tag_set_album_cover_from_bytes((char *)[imageData bytes], minetype, (int)[imageData length], tag);
+    
     
     // Write the new tag to the file
     set_tag(fileLocation.UTF8String, tag);
 
     
     
+
     
     NSLog(@"Export complete");
 }
@@ -342,7 +345,7 @@
     
     songDictionary = songDict;
     
-    NSURL *imageURL = [NSURL URLWithString: [songDict objectForKey: @"artworkUrl100"]];
+    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
     //NSData *imageData = [imageURL resourceDataUsingCache: YES];
     NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
     NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
@@ -355,10 +358,10 @@
     
     
     
-    songTitleField.stringValue = [songDict objectForKey: @"trackName"];
-    albumTitleField.stringValue = [songDict objectForKey: @"collectionName"];
-    artistField.stringValue = [songDict objectForKey: @"artistName"];
-    yearField.stringValue = [[songDict objectForKey: @"releaseDate"] substringToIndex: 4];
+    songTitleField.stringValue = [songDictionary objectForKey: @"trackName"];
+    albumTitleField.stringValue = [songDictionary objectForKey: @"collectionName"];
+    artistField.stringValue = [songDictionary objectForKey: @"artistName"];
+    yearField.stringValue = [[songDictionary objectForKey: @"releaseDate"] substringToIndex: 4];
     
 }
 
