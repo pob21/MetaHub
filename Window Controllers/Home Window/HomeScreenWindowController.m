@@ -118,7 +118,11 @@
 }
 
 
-
+- (void)cleanUpAfterExport {
+    
+    
+    
+}
 
 
 #pragma mark - Actions
@@ -142,6 +146,22 @@
     NSURLResponse *response = nil;
     NSData *responseData = [NSURLConnection sendSynchronousRequest: req returningResponse: &response error: &error];
     NSDictionary * results = [NSJSONSerialization JSONObjectWithData: responseData options:kNilOptions error: &error];
+    
+    
+    
+    // If no search results are found
+    if([[results objectForKey: @"resultCount"] integerValue] == 0) {
+        
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"No search results found"];
+        [alert setInformativeText:@"Either iTunes doesn't have the song or you may have entered something incorrectly"];
+        [alert addButtonWithTitle:@"Ok"];
+        [alert runModal];
+        
+        return;
+    }
+        
+    
     
     
     songSelectorWindow = [[NSWindow alloc] init];
@@ -172,12 +192,9 @@
         [alert addButtonWithTitle:@"Ok"];
         [alert runModal];
         
-        
         return;
-        
     }
 
-    
     
     
     NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
@@ -193,6 +210,8 @@
     // Set the new info
     tag_set_title((char *)songTitleField.stringValue.UTF8String, 0, tag);
     tag_set_artist((char *)artistField.stringValue.UTF8String, 0, tag);
+    tag_set_album_artist((char *)artistField.stringValue.UTF8String, 0, tag);
+    tag_set_genre((char *)[[songDictionary objectForKey: @"primaryGenreName"] UTF8String], 0, tag);
     tag_set_album((char *)albumTitleField.stringValue.UTF8String, 0, tag);
     tag_set_year((char *)yearField.stringValue.UTF8String, 0, tag);
     tag_set_album_cover_from_bytes((char *)[imageData bytes], minetype, (int)[imageData length], tag);
@@ -203,24 +222,16 @@
 
     
     
+//    iTunesApplication *iTunes = [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
+//    iTunesTrack * track = [iTunes add:[NSArray arrayWithObject:[NSURL fileURLWithPath:fileLocation]] to: nil];
 
+    //NSLog(@"iTunes Track: %@", track);
+    
     
     NSLog(@"Export complete");
 }
 
 
-
-
-//2015-08-27 20:25:35.877 MetaHub[56593:1416431] dictionary: {
-//    album = "2014 Forest Hills Drive";
-//    "approximate duration in seconds" = "301.124";
-//    artist = "J. Cole";
-//    composer = pending;
-//    genre = "Hip-Hop/Rap";
-//    title = "G.O.M.D.";
-//    "track number" = "8/13";
-//    year = 2014;
-//}
 
 
 #pragma mark - Utilities
@@ -243,8 +254,6 @@
     
     NSLog(@"File Location: %@", fileLocation);
     
-    
-
     
     
     NSURL *audioURL = [[NSURL alloc] initFileURLWithPath: fileLocation];
@@ -288,52 +297,7 @@
     theErr = AudioFileClose (audioFile);
     assert (theErr == noErr);
     
-    
 }
-
-
-
-
-
-
-
-
-
-- (void)getAlbumArtworkInfo:(NSURL *)url
-{
-
-    
-    AVURLAsset *avURLAsset = [AVURLAsset URLAssetWithURL:url options:nil];
-    
-    for (NSString *format in [avURLAsset availableMetadataFormats]) {
-        
-        for (AVMutableMetadataItem *metadataItem in [avURLAsset metadataForFormat:format]) {
-            
-            
- 
-            NSLog(@"Data: %@", metadataItem);
-            
-            if([metadataItem.commonKey isEqualToString: @"title"]) {
-               // NSLog(@"MDI: %@", metadataItem.value);
-                //metadataItem.value = @"Control (feat. Kendrick Lamar & Jay Electronica)";
-                
-            }
-            
-            /*if ([metadataItem.commonKey isEqualToString:@"artwork"]) {
-                NSImage *artImageInMp3 = [NSImage imageWithData:[(NSDictionary*)metadataItem.value objectForKey:@"data"]];
-                NSLog(@"artImageInMp3 %@",artImageInMp3);
-                break;
-            }*/
-        }
-    }
-}
-
-
-
-
-
-
-
 
 
 
@@ -346,24 +310,19 @@
     songDictionary = songDict;
     
     NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
-    //NSData *imageData = [imageURL resourceDataUsingCache: YES];
     NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
     NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
     albumArtImageView.image = imageFromBundle;
     albumArtImageView.imageScaling = NSImageScaleAxesIndependently;
-
-    
     [self.window.contentView addSubview: albumArtImageView];
-    
-    
     
     
     songTitleField.stringValue = [songDictionary objectForKey: @"trackName"];
     albumTitleField.stringValue = [songDictionary objectForKey: @"collectionName"];
     artistField.stringValue = [songDictionary objectForKey: @"artistName"];
     yearField.stringValue = [[songDictionary objectForKey: @"releaseDate"] substringToIndex: 4];
-    
 }
+
 
 
 

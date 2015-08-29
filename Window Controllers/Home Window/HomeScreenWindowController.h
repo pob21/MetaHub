@@ -13,7 +13,7 @@
 #import "DropSongView.h"
 #import "SongSelectorWindowController.h"
 #import <AVFoundation/AVFoundation.h>
-
+#import "iTunes.h"
 #include "id3v2lib.h"
 
 
@@ -24,6 +24,7 @@
 
 // GUI
 - (void)setupDataFields;
+- (void)cleanUpAfterExport;
 
 
 // Utilities
@@ -37,7 +38,6 @@
 
 
 @property (nonatomic, strong) DropSongView *dropSongView;
-
 @property (nonatomic, strong) NSTextField *songTitleField;
 @property (nonatomic, strong) NSTextField *albumTitleField;
 @property (nonatomic, strong) NSTextField *artistField;

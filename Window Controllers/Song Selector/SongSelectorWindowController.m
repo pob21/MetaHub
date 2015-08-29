@@ -46,7 +46,8 @@
     
     [super showWindow: sender];
     
-    
+    NSButton *closeButton = [self.window standardWindowButton:NSWindowCloseButton];
+    [closeButton setHidden:YES];
     
     self.window.titlebarAppearsTransparent = YES;
     self.window.title = @"Search Results";
@@ -65,18 +66,13 @@
     [tableContainer setDocumentView: songTableView];
     [songTableView addTableColumn: firstColumn];
     [tableContainer setHasVerticalScroller:YES];
-    //tableContainer.autoresizingMask = NSViewHeightSizable | NSViewMinXMargin;
+
     [self.window.contentView addSubview: tableContainer];
-    
-    
-    
     
     
     results = [resultDictionary objectForKey: @"results"];
     
     [songTableView reloadData];
-    
-    //NSLog(@"Data: %li", results.count);
 }
 
 
@@ -127,23 +123,19 @@
     
     NSView *view = [tableView makeViewWithIdentifier:@"MyView" owner:self];
     
-    
-    //[tableView setTarget: self];
-    //[tableView setAction: @selector(click)];
-    
+
     if (view == nil) {
         
 
         
         NSDictionary *currentSong = [results objectAtIndex: row];
-        //NSLog(@"Current Song: %@", currentSong);
+
         
         view = [[NSView alloc]initWithFrame:NSMakeRect(0, 0, 500, 10)];
         [view setWantsLayer: YES];
         
         NSImageView *albumArtImageView = [[NSImageView alloc] initWithFrame: CGRectMake(10, 30, 80, 80)];
         NSURL *imageURL = [NSURL URLWithString: [currentSong objectForKey: @"artworkUrl100"]];
-        //NSData *imageData = [imageURL resourceDataUsingCache: YES];
         NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
         NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
         albumArtImageView.image = imageFromBundle;
@@ -196,13 +188,10 @@
         [view addSubview: albumField];
 
         
-        
-        
         [view setNeedsDisplay:YES];
     }
     
     return view;
-    
 }
 
 
