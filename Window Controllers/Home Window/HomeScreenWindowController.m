@@ -13,7 +13,7 @@
 @implementation HomeScreenWindowController
 
 
-@synthesize dropSongView, songTitleField, albumTitleField, artistField, yearField, saveButton, searchButton, songSelectorWindow, songSelector, albumArtImageView, fileLocation, songDictionary;
+@synthesize dropSongView, songTitleField, albumTitleField, artistField, yearField, saveButton, searchButton, songSelectorWindow, songSelector, albumArtImageView, fileLocation, songDictionary, progressHUD;
 
 
 
@@ -118,9 +118,14 @@
 }
 
 
+
 - (void)cleanUpAfterExport {
     
-    
+    [albumArtImageView removeFromSuperview];
+    songTitleField.stringValue = @"";
+    albumTitleField.stringValue = @"";
+    artistField.stringValue = @"";
+    yearField.stringValue = @"";
     
 }
 
@@ -131,10 +136,22 @@
 
 - (void)search {
     
+    
+    progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
+    progressHUD.labelText = @"Searching...";
+    [self.window.contentView addSubview: progressHUD];
+    [progressHUD showWhileExecuting: @selector(performSearch) onTarget: self withObject: nil animated: YES];
+
+}
+
+
+
+- (void)performSearch {
+    
     NSString *searchString = [NSString stringWithFormat: @"%@+%@", songTitleField.stringValue, artistField.stringValue];
     searchString = [searchString stringByReplacingOccurrencesOfString: @" " withString: @"+"];
     NSURL *searchURL = [NSURL URLWithString: [NSString stringWithFormat:@"https://itunes.apple.com/search?term=%@", searchString]];
-
+    
     
     // Get the song data from iTunes
     NSError *error;
@@ -148,7 +165,6 @@
     NSDictionary * results = [NSJSONSerialization JSONObjectWithData: responseData options:kNilOptions error: &error];
     
     
-    
     // If no search results are found
     if([[results objectForKey: @"resultCount"] integerValue] == 0) {
         
@@ -160,8 +176,6 @@
         
         return;
     }
-        
-    
     
     
     songSelectorWindow = [[NSWindow alloc] init];
@@ -173,15 +187,24 @@
     songSelector.resultDictionary = results;
     [songSelector showWindow: songSelectorWindow];
     [self showWindow: songSelectorWindow];
-
-    
     [songSelectorWindow orderFront: songSelector];
 }
 
 
-
-
 - (void)saveAndExport {
+    
+    progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
+    progressHUD.labelText = @"Saving Changes...";
+    [self.window.contentView addSubview: progressHUD];
+    [progressHUD showWhileExecuting: @selector(performSaveAndExport) onTarget: self withObject: nil animated: YES];
+    
+    
+}
+
+
+
+- (void)performSaveAndExport {
+    
     
     // If the user selected "Save and Export" without dropping a song
     if(fileLocation.length == 0) {
@@ -194,7 +217,7 @@
         
         return;
     }
-
+    
     
     
     NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
@@ -205,7 +228,7 @@
     
     //ID3v2_tag* tag = load_tag(fileLocation.UTF8String); // Load the full tag from the file
     ID3v2_tag* tag = new_tag();
-
+    
     
     // Set the new info
     tag_set_title((char *)songTitleField.stringValue.UTF8String, 0, tag);
@@ -216,22 +239,40 @@
     tag_set_year((char *)yearField.stringValue.UTF8String, 0, tag);
     tag_set_album_cover_from_bytes((char *)[imageData bytes], minetype, (int)[imageData length], tag);
     
-    
     // Write the new tag to the file
     set_tag(fileLocation.UTF8String, tag);
-
     
     
-//    iTunesApplication *iTunes = [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
-//    iTunesTrack * track = [iTunes add:[NSArray arrayWithObject:[NSURL fileURLWithPath:fileLocation]] to: nil];
-
-    //NSLog(@"iTunes Track: %@", track);
+    
+    progressHUD.mode = MBProgressHUDModeIndeterminate;
+    progressHUD.labelText = @"Exporting to iTunes...";
+    
+    
+    iTunesApplication *iTunes = [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
+    [iTunes add:[NSArray arrayWithObject:[NSURL fileURLWithPath:fileLocation]] to: nil];
+    
     
     
     NSLog(@"Export complete");
+    
+    
+    // UIImageView is a UIKit class, we have to initialize it on the main thread
+    __block NSImageView *imageView;
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSImage *image = [NSImage imageNamed:@"checkmark.png"];
+        imageView = [[NSImageView alloc] initWithFrame:NSMakeRect(0.0f, 0.0f, 37.0f, 37.0f)];
+        imageView.image = image;
+    });
+    progressHUD.customView = imageView;
+    progressHUD.mode = MBProgressHUDModeCustomView;
+    progressHUD.labelText = @"Export Complete!";
+    sleep(2);
+
+
+    
+    [self cleanUpAfterExport];
+    
 }
-
-
 
 
 #pragma mark - Utilities
@@ -300,9 +341,6 @@
 }
 
 
-
-
-
 - (void)songSelected:(NSDictionary *)songDict {
     
     //NSLog(@"Song Selected: %@", songDict);
@@ -322,8 +360,6 @@
     artistField.stringValue = [songDictionary objectForKey: @"artistName"];
     yearField.stringValue = [[songDictionary objectForKey: @"releaseDate"] substringToIndex: 4];
 }
-
-
 
 
 

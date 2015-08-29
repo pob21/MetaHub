@@ -13,6 +13,7 @@
 #import "DropSongView.h"
 #import "SongSelectorWindowController.h"
 #import <AVFoundation/AVFoundation.h>
+#import "MBProgressHUD.h"
 #import "iTunes.h"
 #include "id3v2lib.h"
 
@@ -49,6 +50,8 @@
 @property (nonatomic, strong) NSImageView *albumArtImageView;
 @property (nonatomic, strong) NSString *fileLocation;
 @property (nonatomic, strong) NSDictionary *songDictionary;
+@property (nonatomic, strong) MBProgressHUD *progressHUD;
+
 
 @end
 
