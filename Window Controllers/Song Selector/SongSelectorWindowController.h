@@ -8,6 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class HomeScreenWindowController;
+
 @interface SongSelectorWindowController : NSWindowController <NSTableViewDataSource, NSTableViewDelegate>
 
 

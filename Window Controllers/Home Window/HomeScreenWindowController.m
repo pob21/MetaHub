@@ -35,6 +35,7 @@
     [self setupDataFields];
     
 
+    
 }
 
 
@@ -162,7 +163,7 @@
 
 - (void)saveAndExport {
     
-
+    // If the user selected "Save and Export" without dropping a song
     if(fileLocation.length == 0) {
         
         NSAlert *alert = [[NSAlert alloc] init];
@@ -175,179 +176,37 @@
         return;
         
     }
-    [self store];
-    return;
+
     
- /*
-    NSURL *audioURL = [[NSURL alloc] initFileURLWithPath: fileLocation];
-    AudioFileID audioFile;
-    OSStatus theErr = noErr;
-    theErr = AudioFileOpenURL((__bridge CFURLRef)audioURL,
-                              kAudioFileReadPermission,
-                              0,
-                              &audioFile);
-    assert (theErr == noErr);
-    UInt32 dictionarySize = 0;
-    theErr = AudioFileGetPropertyInfo (audioFile,
-                                       kAudioFilePropertyInfoDictionary,
-                                       &dictionarySize,
-                                       0);
-    assert (theErr == noErr);
-    CFDictionaryRef dictionary;
-    theErr = AudioFileGetProperty (audioFile,
-                                   kAudioFilePropertyInfoDictionary,
-                                   &dictionarySize,
-                                   &dictionary);
-    assert (theErr == noErr);
+    ID3v2_tag* tag = load_tag(fileLocation.UTF8String); // Load the full tag from the file
+    tag = new_tag();
     
+    if(tag == NULL)
+    {
+        NSLog(@"Tag is null");
+        tag = new_tag();
+    }
+
+
     
+    // Set the new info
+    tag_set_title((char *)songTitleField.stringValue.UTF8String, 0, tag);
+    tag_set_artist((char *)artistField.stringValue.UTF8String, 0, tag);
+    tag_set_album((char *)albumTitleField.stringValue.UTF8String, 0, tag);
+    tag_set_year((char *)yearField.stringValue.UTF8String, 0, tag);
+
     
-    //NSMutableDictionary *dic = (__bridge NSMutableDictionary*)dictionary;
-    
-   // NSLog (@"dictionary: %@", dic);
-    
-  
-    
-    
-//    NSMutableDictionary *newDic = [NSMutableDictionary new];
-//    [newDic setObject: albumTitleField.stringValue forKey: @"album"];
-//    [newDic setObject: artistField.stringValue forKey: @"artist"];
-//    [newDic setObject: songTitleField.stringValue forKey: @"title"];
-//    [newDic setObject: yearField.stringValue forKey: @"year"];
-    
-    
-    //CFDictionaryRef newDicRef = (__bridge CFDictionaryRef)newDic;
-*/
-    
-   
-   // NSURL *audioURL1 = [[NSURL alloc] initFileURLWithPath: fileLocation];
-    //AudioFileID audioFile1;
-    
-    /*OSStatus theErr1 = noErr;
-    theErr1 = AudioFileOpenURL((__bridge CFURLRef)audioURL, kAudioFileWritePermission, 0, &audioFile);
+    // Write the new tag to the file
+    set_tag(fileLocation.UTF8String, tag);
+
     
     
     
-    assert (theErr1 == noErr);
-    UInt32 dictionarySize1 = 0;
-    theErr = AudioFileGetPropertyInfo (audioFile,
-                                       kAudioFilePropertyInfoDictionary,
-                                       &dictionarySize,
-                                       0);
-    
-    //AudioFileGetProperty(<#AudioFileID inAudioFile#>, <#AudioFilePropertyID inPropertyID#>, <#UInt32 *ioDataSize#>, <#void *outPropertyData#>)
-    theErr = AudioFileSetProperty(audioFile1, kAudioFilePropertyInfoDictionary, dictionarySize1, &dictionary);
-    */
-    
-    
-    /*
-    
-    AudioFileID fileID = nil;
-    AudioFileOpenURL((__bridge CFURLRef) audioURL1, kAudioFileReadWritePermission, 0, &fileID);
-    CFDictionaryRef piDict = nil;
-    UInt32 piDataSize   = sizeof(piDict);
-    AudioFileGetProperty( fileID, kAudioFilePropertyInfoDictionary, &piDataSize, &piDict);
-    NSLog(@"Before: %@", (__bridge NSDictionary *)piDict);
-    
-    NSMutableDictionary *dict = (__bridge NSMutableDictionary*)piDict;
-    [dict setObject: albumTitleField.stringValue forKey: @"album"];
-    [dict setObject: artistField.stringValue forKey: @"artist"];
-    [dict setObject: songTitleField.stringValue forKey: @"title"];
-    [dict setObject: yearField.stringValue forKey: @"year"];
-    piDict = (__bridge CFDictionaryRef)dict;
-    piDataSize = sizeof(dict);
-    OSStatus status = AudioFileSetProperty(fileID, kAudioFilePropertyInfoDictionary, piDataSize, &piDict);
-    
-    NSLog(@"After: %@", (__bridge NSDictionary *)piDict);
-    
-    
-    NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain code:status userInfo:nil];
-    NSLog(@"Error: %@", [error description]);
-    
-    
-    
-    CFRelease (piDict);
-    OSStatus status1 = AudioFileClose (fileID);
-    NSError *error1 = [NSError errorWithDomain: NSOSStatusErrorDomain code:status1 userInfo:nil];
-    NSLog(@"Error1: %@", error1);
-    //assert (theErr == noErr);
- */
+    NSLog(@"Export complete");
 }
 
 
 
-- (void)store {
-    
-    
-    NSLog(@"File Location: %@", fileLocation);
-    
-    NSError *error;
-    AVAssetWriter *assetWrtr = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath: fileLocation] fileType:AVFileTypeAppleM4A error:&error];
-    
-    NSLog(@"Error: %@",error);
-    
-    NSArray *existingMetadataArray = assetWrtr.metadata;
-    NSMutableArray *newMetadataArray = nil;
-    NSLog(@"The Data: %@", existingMetadataArray);
-    if (existingMetadataArray)
-    {
-       
-        NSLog(@"Existing Metadata: %@", [existingMetadataArray mutableCopy]);
-        newMetadataArray = [existingMetadataArray mutableCopy]; // To prevent overriding of existing metadata
-    }
-    else
-    {
-        newMetadataArray = [[NSMutableArray alloc] init];
-    }
-    
-//
-//    AVMutableMetadataItem *item = [[AVMutableMetadataItem alloc] init];
-//    item.keySpace = AVMetadataKeySpaceCommon;
-//    item.key = AVMetadataCommonKeyArtwork;
-//    item.value = [NSData dataWithContentsOfURL: [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]]];
-//    [newMetadataArray addObject:item];
-//
-    
-    
-    AVMutableMetadataItem *titleItem = [[AVMutableMetadataItem alloc] init];
-    titleItem.keySpace = AVMetadataKeySpaceCommon;
-    titleItem.key = AVMetadataCommonKeyTitle;
-    titleItem.value = songTitleField.stringValue;
-    [newMetadataArray addObject:titleItem];
-
-    
-    
-    AVMutableMetadataItem *artistItem = [[AVMutableMetadataItem alloc] init];
-    artistItem.keySpace = AVMetadataKeySpaceCommon;
-    artistItem.key = AVMetadataCommonKeyArtist;
-    artistItem.value = artistField.stringValue;
-    [newMetadataArray addObject: artistItem];
-
-    
-    
-    AVMutableMetadataItem *albumItem = [[AVMutableMetadataItem alloc] init];
-    albumItem.keySpace = AVMetadataKeySpaceCommon;
-    albumItem.key = AVMetadataCommonKeyAlbumName;
-    albumItem.value = albumTitleField.stringValue;
-    [newMetadataArray addObject: albumItem];
-
-    
-   
-    AVMutableMetadataItem *creationDateItem = [[AVMutableMetadataItem alloc] init];
-    creationDateItem.keySpace = AVMetadataKeySpaceCommon;
-    creationDateItem.key = AVMetadataCommonKeyCreationDate;
-    creationDateItem.value = yearField.stringValue;
-    [newMetadataArray addObject:creationDateItem];
-
-    
-    assetWrtr.metadata = newMetadataArray;
-    
-    
-    
-    [assetWrtr startWriting];
-    [assetWrtr startSessionAtSourceTime:kCMTimeZero];
-    
-}
 
 //2015-08-27 20:25:35.877 MetaHub[56593:1416431] dictionary: {
 //    album = "2014 Forest Hills Drive";
@@ -427,14 +286,6 @@
     assert (theErr == noErr);
     
     
-    //NSDictionary *original = [NSDictionary dictionaryWithObject:@"World" forKey:@"Hello"];
-    //CFDictionaryRef dict = (__bridge CFDictionaryRef)original;
-    //NSDictionary *andBack = (__bridge NSDictionary*)dict;
-    //NSLog(@"%@", andBack);
-    
-    
-    
-    //[self getAlbumArtworkInfo: audioURL];
 }
 
 
@@ -457,7 +308,7 @@
             
             
  
-            NSLog(@"Data: %@\t%@", metadataItem.commonKey, metadataItem.value);
+            NSLog(@"Data: %@", metadataItem);
             
             if([metadataItem.commonKey isEqualToString: @"title"]) {
                // NSLog(@"MDI: %@", metadataItem.value);
@@ -492,7 +343,8 @@
     songDictionary = songDict;
     
     NSURL *imageURL = [NSURL URLWithString: [songDict objectForKey: @"artworkUrl100"]];
-    NSData *imageData = [imageURL resourceDataUsingCache: YES];
+    //NSData *imageData = [imageURL resourceDataUsingCache: YES];
+    NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
     NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
     albumArtImageView.image = imageFromBundle;
     albumArtImageView.imageScaling = NSImageScaleAxesIndependently;

@@ -91,18 +91,13 @@
     NSButton *button = (NSButton *)sender;
     
     
-    //NSLog(@"Tag: %li", button.tag);
-    
-    
     NSDictionary *song = [results objectAtIndex: button.tag];
     
-    
+
     [delegate performSelector: @selector(songSelected:) withObject: song];
     
     
-    
     [self close];
-    
 }
 
 
@@ -148,7 +143,8 @@
         
         NSImageView *albumArtImageView = [[NSImageView alloc] initWithFrame: CGRectMake(10, 30, 80, 80)];
         NSURL *imageURL = [NSURL URLWithString: [currentSong objectForKey: @"artworkUrl100"]];
-        NSData *imageData = [imageURL resourceDataUsingCache: YES];
+        //NSData *imageData = [imageURL resourceDataUsingCache: YES];
+        NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
         NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
         albumArtImageView.image = imageFromBundle;
         [albumArtImageView setWantsLayer: YES];

@@ -12,8 +12,10 @@
 #import "NSView+ViewBlur.h"
 #import "DropSongView.h"
 #import "SongSelectorWindowController.h"
+#import <AVFoundation/AVFoundation.h>
 
-@import AVFoundation;
+#include "id3v2lib.h"
+
 
 
 @interface HomeScreenWindowController : NSWindowController <NSTextFieldDelegate>
