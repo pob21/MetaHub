@@ -16,11 +16,14 @@
 @synthesize dropSongView, songTitleField, albumTitleField, artistField, yearField, saveButton, searchButton, songSelectorWindow, songSelector, albumArtImageView, fileLocation, songDictionary, progressHUD;
 
 
+#define METAHUB_DOC_LOCATION [NSString stringWithFormat: @"%@/Documents/MetaHub", NSHomeDirectory()]
+#define METAHUB_DOWNLOADS_LOCATION [METAHUB_DOC_LOCATION stringByAppendingString: @"/Downloads"]
 
 
 -(void)showWindow:(id)sender {
     
     [super showWindow: sender];
+    
     
     self.window.titlebarAppearsTransparent = YES;
     
@@ -36,6 +39,17 @@
     
 
     
+
+    //if(![[NSUserDefaults standardUserDefaults] boolForKey: @"InitialSetupComplete"]) {
+        
+        progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
+        progressHUD.labelText = @"Setting Up...";
+        [self.window.contentView addSubview: progressHUD];
+        [progressHUD showWhileExecuting: @selector(doInitialSetup) onTarget: self withObject: nil animated: YES];
+        
+        [[NSUserDefaults standardUserDefaults] setBool: YES forKey: @"InitialSetupComplete"];
+        //[[NSUserDefaults standardUserDefaults] synchronize];
+    //}
 }
 
 
@@ -44,7 +58,6 @@
 
 
 - (void)setupDataFields {
-    
     
     songTitleField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, self.window.frame.size.height-355, 300, 50)];
     songTitleField.stringValue = @"";
@@ -56,7 +69,6 @@
     [self.window.contentView addSubview: songTitleField];
     
     
-    
     albumTitleField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, self.window.frame.size.height-415, 300, 50)];
     albumTitleField.stringValue = @"";
     albumTitleField.placeholderString = @"Album Title";
@@ -65,7 +77,6 @@
     albumTitleField.editable = YES;
     albumTitleField.bordered = NO;
     [self.window.contentView addSubview: albumTitleField];
-
     
     
     artistField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, self.window.frame.size.height-475, 300, 50)];
@@ -78,8 +89,6 @@
     [self.window.contentView addSubview: artistField];
 
     
-    
-    
     yearField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, self.window.frame.size.height-540, 300, 50)];
     yearField.stringValue = @"";
     yearField.placeholderString = @"Year";
@@ -88,8 +97,6 @@
     yearField.editable = YES;
     yearField.bordered = NO;
     [self.window.contentView addSubview: yearField];
-
-
     
     
     searchButton = [[NSButton alloc] initWithFrame: CGRectMake(0, 60, 300, 60)];
@@ -102,9 +109,6 @@
     [searchButton setAction: @selector(search)];
     [self.window.contentView addSubview: searchButton];
 
-    
-    
-    
     
     saveButton = [[NSButton alloc] initWithFrame: CGRectMake(0, 0, 300, 60)];
     [saveButton setTitle: @"Save And Export"];
@@ -121,11 +125,20 @@
 
 - (void)cleanUpAfterExport {
     
+    dropSongView.alphaValue = 1.0f;
+    
+    [self.window.contentView addSubview: dropSongView];
+
+    
+    albumArtImageView.image = nil;
     [albumArtImageView removeFromSuperview];
     songTitleField.stringValue = @"";
     albumTitleField.stringValue = @"";
     artistField.stringValue = @"";
     yearField.stringValue = @"";
+    fileLocation = @"";
+    songDictionary = nil;
+    
     
 }
 
@@ -136,12 +149,10 @@
 
 - (void)search {
     
-    
     progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
     progressHUD.labelText = @"Searching...";
     [self.window.contentView addSubview: progressHUD];
     [progressHUD showWhileExecuting: @selector(performSearch) onTarget: self withObject: nil animated: YES];
-
 }
 
 
@@ -197,8 +208,6 @@
     progressHUD.labelText = @"Saving Changes...";
     [self.window.contentView addSubview: progressHUD];
     [progressHUD showWhileExecuting: @selector(performSaveAndExport) onTarget: self withObject: nil animated: YES];
-    
-    
 }
 
 
@@ -220,9 +229,9 @@
     
     
     
-    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
+    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl600"]];
     NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
-    char *minetype = get_mime_type_from_filename([[songDictionary objectForKey: @"artworkUrl100"] UTF8String]);
+    char *minetype = get_mime_type_from_filename([[songDictionary objectForKey: @"artworkUrl600"] UTF8String]);
     
     
     
@@ -252,7 +261,6 @@
     [iTunes add:[NSArray arrayWithObject:[NSURL fileURLWithPath:fileLocation]] to: nil];
     
     
-    
     NSLog(@"Export complete");
     
     
@@ -267,17 +275,101 @@
     progressHUD.mode = MBProgressHUDModeCustomView;
     progressHUD.labelText = @"Export Complete!";
     sleep(2);
-
-
     
     [self cleanUpAfterExport];
+}
+
+
+
+
+
+- (void)searchYouTube:(NSString *)url {
+    
+    progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
+    progressHUD.labelText = @"Fetching Song...";
+    [self.window.contentView addSubview: progressHUD];
+    [progressHUD showWhileExecuting: @selector(performYouTubeSearchAndDownload:) onTarget: self withObject: url animated: YES];
+}
+
+
+
+- (void)performYouTubeSearchAndDownload:(NSString *)url {
+    
+    
+    NSURL *conversionURL = [NSURL URLWithString: [@"http://YouTubeInMP3.com/fetch/?format=JSON&video=[URL]" stringByReplacingOccurrencesOfString: @"[URL]" withString: url]];
+    
+    
+    // Download the song
+    NSError *error;
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL: conversionURL];
+    [req setHTTPMethod: @"GET"];
+    [req addValue: @"application/json" forHTTPHeaderField: @"Content-Type"];
+    
+    // Get the JSON and parse it
+    NSURLResponse *response = nil;
+    NSData *responseData = [NSURLConnection sendSynchronousRequest: req returningResponse: &response error: &error];
+    NSDictionary * results = [NSJSONSerialization JSONObjectWithData: responseData options:kNilOptions error: &error];
+    
+    
+    //NSLog(@"Results: %@", results);
+    
+    
+    NSString *songTitle = [[results objectForKey: @"title"] stringByReplacingOccurrencesOfString: @"\"" withString: @""];
+    //songTitle = [songTitle stringByReplacingOccurrencesOfString: @" " withString: @""];
+    songTitle = [songTitle stringByReplacingOccurrencesOfString: @"/" withString: @""];
+
+    
+    
+    NSString *downloadLocation = [NSString stringWithFormat: @"%@/%@.mp3", METAHUB_DOWNLOADS_LOCATION, songTitle];
+    NSString *downloadLink = [[results objectForKey: @"link"] stringByReplacingOccurrencesOfString: @"\"" withString: @""];
+    
+    
+    NSLog(@"Download loc: %@", downloadLocation);
+    NSLog(@"Download link: %@", downloadLink);
+    NSLog(@"Song Title: %@", songTitle);
+    
+    
+    
+    progressHUD.mode = MBProgressHUDModeIndeterminate;
+    progressHUD.labelText = @"Downloading song...";
+    
+    // Download song
+    if([[NSFileManager defaultManager] createFileAtPath: downloadLocation
+                                               contents: [NSData dataWithContentsOfURL:[NSURL URLWithString: downloadLink]] attributes: nil]) {
+        
+        NSLog(@"Download Complete");
+        
+        
+        // UIImageView is a UIKit class, we have to initialize it on the main thread
+        __block NSImageView *imageView;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            NSImage *image = [NSImage imageNamed:@"checkmark.png"];
+            imageView = [[NSImageView alloc] initWithFrame:NSMakeRect(0.0f, 0.0f, 37.0f, 37.0f)];
+            imageView.image = image;
+        });
+        progressHUD.customView = imageView;
+        progressHUD.mode = MBProgressHUDModeCustomView;
+        progressHUD.labelText = @"Download Complete!";
+        sleep(0.5);
+        
+        
+        
+        fileLocation = downloadLocation;
+        
+        
+        songTitleField.stringValue = [[results objectForKey: @"title"] stringByReplacingOccurrencesOfString: @"\"" withString: @""];
+        
+        
+    }
     
 }
+
 
 
 #pragma mark - Utilities
 
 
+// Called for drag and drop
 - (void)linkSongInArray:(NSArray *)fileArray {
     
     if(fileArray.count == 0)
@@ -324,14 +416,13 @@
     
     NSMutableDictionary *dic = (__bridge NSMutableDictionary*)dictionary;
     
-    NSLog (@"dictionary: %@", dic);
+    //NSLog (@"dictionary: %@", dic);
 
 
     songTitleField.stringValue = [dic objectForKey: @"title"] == nil ? @"" : [dic objectForKey: @"title"];
     albumTitleField.stringValue = [dic objectForKey: @"album"] == nil ? @"" : [dic objectForKey: @"album"];
     artistField.stringValue = [dic objectForKey: @"artist"] == nil ? @"" : [dic objectForKey: @"artist"];
     yearField.stringValue = [dic objectForKey: @"year"] == nil ? @"" : [dic objectForKey: @"year"];;
-    
     
     
     CFRelease (dictionary);
@@ -341,24 +432,64 @@
 }
 
 
+// Called after song is selected from search results
 - (void)songSelected:(NSDictionary *)songDict {
     
-    //NSLog(@"Song Selected: %@", songDict);
     
-    songDictionary = songDict;
     
-    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl100"]];
+    dropSongView.alphaValue = 0.0f;
+    
+    http://YouTubeInMP3.com/fetch/?format=JSON&video=https://www.youtube.com/watch?v=Mqr9w6zp7pw
+    
+    
+    songDictionary = [NSMutableDictionary dictionaryWithDictionary: songDict];
+    
+    
+    NSString *lowResAlbumArt = [songDictionary objectForKey: @"artworkUrl100"];
+    NSString *highResAlbumArt = [lowResAlbumArt stringByReplacingOccurrencesOfString: @"100x100" withString: @"600x600"];
+    
+    
+    [songDictionary setObject: highResAlbumArt forKey: @"artworkUrl600"];
+    
+    NSLog(@"Song Selected: %@", songDictionary);
+    
+    
+    NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl600"]];
     NSData *imageData = [NSData dataWithContentsOfURL: imageURL];
     NSImage *imageFromBundle = [[NSImage alloc] initWithData:imageData];
     albumArtImageView.image = imageFromBundle;
     albumArtImageView.imageScaling = NSImageScaleAxesIndependently;
     [self.window.contentView addSubview: albumArtImageView];
     
-    
     songTitleField.stringValue = [songDictionary objectForKey: @"trackName"];
     albumTitleField.stringValue = [songDictionary objectForKey: @"collectionName"];
     artistField.stringValue = [songDictionary objectForKey: @"artistName"];
     yearField.stringValue = [[songDictionary objectForKey: @"releaseDate"] substringToIndex: 4];
+}
+
+
+
+
+
+- (void)doInitialSetup {
+    
+    
+
+    //NSLog(@"URL: %@", METAHUB_DOWNLOADS_LOCATION);
+    
+    if(![[NSFileManager defaultManager] fileExistsAtPath:METAHUB_DOC_LOCATION]) {
+        
+        [[NSFileManager defaultManager] createDirectoryAtPath: METAHUB_DOC_LOCATION withIntermediateDirectories: YES attributes: nil error: nil];
+        
+    }
+    
+    
+    
+    if(![[NSFileManager defaultManager] fileExistsAtPath: METAHUB_DOWNLOADS_LOCATION]) {
+        
+        [[NSFileManager defaultManager] createDirectoryAtPath: METAHUB_DOWNLOADS_LOCATION withIntermediateDirectories: YES attributes: nil error: nil];
+    }
+    
 }
 
 

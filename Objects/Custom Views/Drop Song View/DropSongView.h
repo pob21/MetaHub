@@ -22,5 +22,6 @@
 @property (nonatomic, weak) id delegate;
 @property (nonatomic, strong) NSImageView *addImageView;
 @property (nonatomic, strong) NSTextField *addSongTextField;
+@property (nonatomic, strong) NSSearchField *searchField;
 
 @end

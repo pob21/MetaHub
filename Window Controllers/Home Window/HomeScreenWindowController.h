@@ -35,8 +35,11 @@
 
 // Actions
 - (void)search;
+- (void)performSearch;
 - (void)saveAndExport;
-
+- (void)performSaveAndExport;
+- (void)searchYouTube:(NSString *)url;
+- (void)performYouTubeSearchAndDownload:(NSString *)url;
 
 @property (nonatomic, strong) DropSongView *dropSongView;
 @property (nonatomic, strong) NSTextField *songTitleField;
@@ -49,7 +52,7 @@
 @property (nonatomic, strong) SongSelectorWindowController *songSelector;
 @property (nonatomic, strong) NSImageView *albumArtImageView;
 @property (nonatomic, strong) NSString *fileLocation;
-@property (nonatomic, strong) NSDictionary *songDictionary;
+@property (nonatomic, strong) NSMutableDictionary *songDictionary;
 @property (nonatomic, strong) MBProgressHUD *progressHUD;
 
 

@@ -10,7 +10,7 @@
 
 @implementation DropSongView
 
-@synthesize addImageView, addSongTextField, delegate;
+@synthesize addImageView, addSongTextField, delegate, searchField;
 
 - (instancetype)initWithFrame:(NSRect)frameRect withDelegate: (id)__delegate {
     
@@ -40,7 +40,11 @@
         [self addSubview: addSongTextField];
         
         
-        
+        searchField = [[NSSearchField alloc] initWithFrame: NSMakeRect(0, self.frame.size.height-75, self.frame.size.width, 50)];
+        [searchField setTarget: self];
+        [searchField setAction: @selector(searchYouTube)];
+        searchField.placeholderString = @"Enter youtube url";
+        [self addSubview: searchField];
         
         
         [self registerForDraggedTypes:[NSArray arrayWithObjects:
@@ -130,6 +134,17 @@
     return YES;
 }
 
+
+
+
+#pragma mark - Actions
+
+
+- (void)searchYouTube {
+    
+    
+    [delegate performSelector: @selector(searchYouTube:) withObject: searchField.stringValue];
+}
 
 
 @end
