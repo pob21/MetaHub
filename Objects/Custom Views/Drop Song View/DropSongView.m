@@ -44,7 +44,7 @@
         [searchField setTarget: self];
         [searchField setAction: @selector(searchYouTube)];
         searchField.placeholderString = @"Enter youtube url";
-        [self addSubview: searchField]; 
+        [self addSubview: searchField];
         
         
         [self registerForDraggedTypes:[NSArray arrayWithObjects:
