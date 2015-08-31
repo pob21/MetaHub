@@ -39,12 +39,12 @@
         addSongTextField.bordered = NO;
         [self addSubview: addSongTextField];
         
-        
-        searchField = [[NSSearchField alloc] initWithFrame: NSMakeRect(0, self.frame.size.height-75, self.frame.size.width, 50)];
+        /*
+        searchField = [[NSSearchField alloc] initWithFrame: NSMakeRect(0, self.frame.size.height-55, self.frame.size.width, 50)];
         [searchField setTarget: self];
         [searchField setAction: @selector(searchYouTube)];
         searchField.placeholderString = @"Enter youtube url";
-        [self addSubview: searchField];
+        [self addSubview: searchField]; */
         
         
         [self registerForDraggedTypes:[NSArray arrayWithObjects:

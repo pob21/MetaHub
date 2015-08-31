@@ -24,8 +24,8 @@
     
     [super showWindow: sender];
     
-    
-    self.window.titlebarAppearsTransparent = YES;
+    [self.window setStyleMask:NSBorderlessWindowMask];
+
     
     dropSongView = [[DropSongView alloc] initWithFrame: NSMakeRect(0, self.window.frame.size.height-300, 300, 300) withDelegate: self];
     [self.window.contentView addSubview: dropSongView];
@@ -40,7 +40,7 @@
 
     
 
-    //if(![[NSUserDefaults standardUserDefaults] boolForKey: @"InitialSetupComplete"]) {
+    if(![[NSUserDefaults standardUserDefaults] boolForKey: @"InitialSetupComplete"]) {
         
         progressHUD = [[MBProgressHUD alloc] initWithView: self.window.contentView];
         progressHUD.labelText = @"Setting Up...";
@@ -48,8 +48,11 @@
         [progressHUD showWhileExecuting: @selector(doInitialSetup) onTarget: self withObject: nil animated: YES];
         
         [[NSUserDefaults standardUserDefaults] setBool: YES forKey: @"InitialSetupComplete"];
-        //[[NSUserDefaults standardUserDefaults] synchronize];
-    //}
+        [[NSUserDefaults standardUserDefaults] synchronize];
+    }
+    
+    
+    
 }
 
 
@@ -125,7 +128,7 @@
 
 - (void)cleanUpAfterExport {
     
-    dropSongView.alphaValue = 1.0f;
+    self.dropSongView.hidden = NO;
     
     [self.window.contentView addSubview: dropSongView];
 
@@ -179,11 +182,7 @@
     // If no search results are found
     if([[results objectForKey: @"resultCount"] integerValue] == 0) {
         
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"No search results found"];
-        [alert setInformativeText:@"Either iTunes doesn't have the song or you may have entered something incorrectly"];
-        [alert addButtonWithTitle:@"Ok"];
-        [alert runModal];
+        [self performSelectorOnMainThread: @selector(showAlertWithData:) withObject: @[@"No search results found", @"Adjust your query and try again"] waitUntilDone: YES];
         
         return;
     }
@@ -197,8 +196,7 @@
     songSelector = [[SongSelectorWindowController alloc] initWithWindow: songSelectorWindow usingDelegate: self];
     songSelector.resultDictionary = results;
     [songSelector showWindow: songSelectorWindow];
-    [self showWindow: songSelectorWindow];
-    [songSelectorWindow orderFront: songSelector];
+
 }
 
 
@@ -218,11 +216,7 @@
     // If the user selected "Save and Export" without dropping a song
     if(fileLocation.length == 0) {
         
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Error"];
-        [alert setInformativeText:@"You haven't selected a file yet."];
-        [alert addButtonWithTitle:@"Ok"];
-        [alert runModal];
+        [self performSelectorOnMainThread: @selector(showAlertWithData:) withObject: @[@"Error", @"You haven't selected a file yet."] waitUntilDone: YES];
         
         return;
     }
@@ -297,7 +291,7 @@
     
     
     NSURL *conversionURL = [NSURL URLWithString: [@"http://YouTubeInMP3.com/fetch/?format=JSON&video=[URL]" stringByReplacingOccurrencesOfString: @"[URL]" withString: url]];
-    
+    NSLog(@"Con URL: %@", conversionURL);
     
     // Download the song
     NSError *error;
@@ -309,6 +303,16 @@
     NSURLResponse *response = nil;
     NSData *responseData = [NSURLConnection sendSynchronousRequest: req returningResponse: &response error: &error];
     NSDictionary * results = [NSJSONSerialization JSONObjectWithData: responseData options:kNilOptions error: &error];
+    
+    if(results == nil) {
+        
+        progressHUD.mode = MBProgressHUDModeText;
+        progressHUD.labelText = @"Error Downloading video";
+        NSLog(@"Response: %@", response);
+        NSLog(@"Results: %@", results);
+        sleep(1);
+        return;
+    }
     
     
     //NSLog(@"Results: %@", results);
@@ -356,7 +360,7 @@
         
         fileLocation = downloadLocation;
         
-        
+        NSLog(@"Title: %@", [results objectForKey: @"title"]);
         songTitleField.stringValue = [[results objectForKey: @"title"] stringByReplacingOccurrencesOfString: @"\"" withString: @""];
         
         
@@ -436,10 +440,9 @@
 - (void)songSelected:(NSDictionary *)songDict {
     
     
+    self.dropSongView.hidden = YES;
     
-    dropSongView.alphaValue = 0.0f;
     
-    http://YouTubeInMP3.com/fetch/?format=JSON&video=https://www.youtube.com/watch?v=Mqr9w6zp7pw
     
     
     songDictionary = [NSMutableDictionary dictionaryWithDictionary: songDict];
@@ -451,7 +454,7 @@
     
     [songDictionary setObject: highResAlbumArt forKey: @"artworkUrl600"];
     
-    NSLog(@"Song Selected: %@", songDictionary);
+    //NSLog(@"Song Selected: %@", songDictionary);
     
     
     NSURL *imageURL = [NSURL URLWithString: [songDictionary objectForKey: @"artworkUrl600"]];
@@ -491,6 +494,22 @@
     }
     
 }
+
+
+
+- (void)showAlertWithData:(NSArray *)array {
+    
+    NSString *title = [array objectAtIndex: 0];
+    NSString *details = [array objectAtIndex: 1];
+    
+    
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText: title];
+    [alert setInformativeText: details];
+    [alert addButtonWithTitle:@"Ok"];
+    [alert runModal];
+}
+
 
 
 
